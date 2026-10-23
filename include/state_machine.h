@@ -64,6 +64,7 @@ private:
     uint32_t _stepArrivalMs    = 0;
     bool     _waitingStepDwell = false;
     uint8_t  _routeStepIdx     = 0;
+    uint8_t  _returnHomePhase  = 0;
     uint8_t  _homingPhase      = 0;
     float    _savedSpeed       = ServoCfg::DEFAULT_SPEED_DPS;
 

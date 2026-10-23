@@ -123,6 +123,9 @@ void CaptivePortalServer::handleWsMessage(void* arg, uint8_t* data, size_t len) 
             float spd = doc["speed"] | ServoCfg::DEFAULT_SPEED_DPS;
             _arm.setSpeedDps(spd);
         } else if (cmd == "goto_home") {
+            if (_fsm.getTelemetry().mode != SystemMode::MANUAL) {
+                _fsm.requestModeChange(SystemMode::MANUAL);
+            }
             if (_fsm.isManualMovementAllowed()) {
                 _arm.setTargetPose(_arm.getHomePose());
             }

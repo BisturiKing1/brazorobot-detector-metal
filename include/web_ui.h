@@ -353,7 +353,7 @@ input[type=number], input[type=text] {
       </div>
 
       <div class="btn-row">
-        <button id="btnGoHome" class="ghost" onclick="sendCmd({cmd:'goto_home'});showToast('Yendo a HOME...')">Ir a HOME</button>
+        <button id="btnGoHome" class="ghost" onclick="sendCmd({cmd:'goto_home'});showToast('Subiendo a altura segura y rotando a HOME...')">Ir a HOME (Seguro)</button>
         <button id="btnSaveHome" class="primary" onclick="sendCmd({cmd:'save_home'});showToast('Guardado en Memoria Flash NVS: Posición HOME')">Guardar Actual como HOME</button>
       </div>
     </div>

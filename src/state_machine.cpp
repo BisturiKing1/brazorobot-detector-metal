@@ -224,7 +224,9 @@ void RobotStateMachine::updateRouteExecution(const ProgrammableRoute& route, boo
                                 "Paso " + String(_telemetry.activeRouteStep) + "/" + String(route.stepCount) +
                                 ": " + route.steps[_routeStepIdx].label;
     } else {
-        // Terminó la ruta -> Registrar resultado y volver a posición inicial segura (HOME)
+        // Terminó la ruta -> Registrar resultado e iniciar retorno seguro en 2 fases:
+        // Fase 0: Subir verticalmente a la altura segura de HOME manteniendo el ángulo actual de la Base
+        // Fase 1: Ya con el brazo arriba, rotar la Base hacia HOME
         if (isMetal) {
             _telemetry.metalCount++;
             _telemetry.lastResult = "Ciclo Metal completado exitosamente";
@@ -233,12 +235,29 @@ void RobotStateMachine::updateRouteExecution(const ProgrammableRoute& route, boo
             _telemetry.lastResult = "Ciclo No-Metal completado exitosamente";
         }
         _telemetry.activeRouteStep = 0;
-        _arm.setTargetPose(_arm.getHomePose());
-        enterState(FsmState::RETURN_TO_HOME, "Ciclo terminado -> Regresando a posición inicial segura (HOME)");
+
+        ArmPose liftFirst = _arm.getHomePose();
+        liftFirst.base    = _arm.getCurrentAngle(ServoCfg::BASE);
+        liftFirst.gripper = _arm.getCurrentAngle(ServoCfg::GRIPPER);
+        _arm.setTargetPose(liftFirst);
+        _returnHomePhase = 0;
+        enterState(FsmState::RETURN_TO_HOME, "Pieza liberada -> 1/2 Subiendo a altura segura antes de rotar...");
     }
 }
 
 void RobotStateMachine::updateReturnToHome(const SensorState& s, uint32_t now) {
+    // Fase 0: Esperar a que el brazo termine de subir en el sitio de descarga antes de girar la Base
+    if (_returnHomePhase == 0) {
+        if (!_arm.isMoving() && (now - _stateEnterMs >= 200)) {
+            _arm.setTargetPose(_arm.getHomePose());
+            _returnHomePhase = 1;
+            _stateEnterMs    = now;
+            _telemetry.statusText = "En altura segura -> 2/2 Rotando Base hacia HOME...";
+        }
+        return;
+    }
+
+    // Fase 1: Esperar a que termine de rotar a HOME
     if (!_arm.isMoving() && (now - _stateEnterMs >= 300)) {
         if (s.partPresent || s.anyMetalDetected) {
             enterState(FsmState::WAIT_PART_REMOVAL, "En posición inicial -> Esperando retiro de la pieza en zona de sensores");
